@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import ApiError from "./ApiError.js";
 
 
 cloudinary.config({
@@ -10,26 +11,38 @@ cloudinary.config({
 });
 
 
-const uploadFileOnCloudinary = async (pathToLocalFile) => {
+const uploadFileOnCloudinary = async (pathToLocalFile, retries = 3) => {
 
-    try{
+    let attempt= 0;
 
-        if(!pathToLocalFile) return null;
+    while(attempt < retries){
+        try{
 
-        const response = await cloudinary.uploader.upload(pathToLocalFile, {
-            resource_type: "auto"
-        });
+            if(!pathToLocalFile) return null;
 
-        console.log("File upload success:", response);
-        fs.unlinkSync(pathToLocalFile);
-        return response;
+            const response = await cloudinary.uploader.upload(pathToLocalFile, {
+                resource_type: "auto"
+            });
 
-    }
-    catch(error){
+            console.log("File upload success:", response);
+            fs.unlinkSync(pathToLocalFile);
+            return response;
 
-        console.log("File upload failed!!", error);
-        throw error;
+        }
+        catch(error){
 
+            attempt += 1;
+            console.error(`File upload attempt:${attempt} failed!!`, error);
+
+            if(attempt >= retries){
+                console.log("Max retries limit reached!!");
+                throw new ApiError(500, `Upload failed after multiple attempts!! with error ${error.message}`);
+            }
+            
+            //delay
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2s delay
+
+        }
     }
 
 }

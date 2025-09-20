@@ -9,7 +9,7 @@ Wrapper for all async calls/tasks for a centralized way of handling promises/try
 //HO function
 const asyncHandler = (requestHandler) => {
 
-    async (req, res, next) => {
+    return async (req, res, next) => {
 
         try{
 
@@ -18,7 +18,7 @@ const asyncHandler = (requestHandler) => {
         }
         catch(error){
 
-            res.status(error.code || 500).json({
+            res.status(error.statusCode || 500).json({
                 success: false,
                 message: error.message
             });
